@@ -25,5 +25,11 @@ seeded to produce reproducible tests.
 
 The tests can be run by the testSim scripts in tests, or by bringing up the pages like testSim1.html.
 
+## Running in ObservableHQ
+
+The Sim class can be imported into an ObservableHQ Notebook
+[like this](https://observablehq.com/d/a53abfe0ca950b51).  For development
+it can be served using one of the servers provided in this repo.
+
 
 

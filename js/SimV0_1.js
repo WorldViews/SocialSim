@@ -230,7 +230,6 @@
 
         static test() {
             console.log("static test 1 called");
-
             var grid4x5 = Sim.genGridGraph(4, 5, 180);
             var grid = Sim.genGridGraph(6, 8, 120);
             console.log("grid", grid);

@@ -13,11 +13,17 @@
             this.graph = graph;
             //this.data = graph.data;
             this.model = model;
+            if (model.selectedActions == null)
+                model.selectedActions = model.actions;
             this.synth = synth;
             this.useMidi = false;
             this.nodeById = {};
             var inst = this;
             graph.data.nodes.forEach(n => inst.nodeById[n.id] = n);
+            graph.data.edges.forEach(e => {
+                e.srcNode = inst.nodeById[e.source];
+                e.dstNode = inst.nodeById[e.target];
+            })
             this.reset();
         }
 
@@ -34,9 +40,10 @@
             this.graph.data.edges.forEach(edge => edge.act = null);
             if (params.initFun)
                 params.initFun(this);
-            this.updateAppearance();
+            //this.updateAppearance();
         }
 
+        /*
         updateAppearance() {
             var inst = this;
             this.graph.data.nodes.forEach(node => inst.updateNodeAppearance(node));
@@ -59,7 +66,7 @@
                 edge.style = { stroke: "gray", lineWidth: 1 };
             }
         }
-
+        */
 
         getData() {
             return this.data;
@@ -85,6 +92,9 @@
         }
 
         updateState() {
+            this.debug = false;
+            if (this.debug)
+                debugger;
             this.gen++;
             let data = this.data;
             //console.log("updateState");
@@ -101,7 +111,7 @@
             let nodes = this.graph.data.nodes;
             nodes.forEach(node => {
                 node.happiness = inst.clamp(node.happiness + node.volatility * (Math.random() - 0.5), 0, 1);
-                node.style = { fill: inst.getColor(node.happiness, node.arousal) };
+                //node.style = { fill: inst.getColor(node.happiness, node.arousal) };
             });
         }
 
@@ -110,12 +120,18 @@
             var inst = this;
             this.graph.data.nodes.forEach(node => node.receivedActions = []);
             this.graph.data.edges.forEach(edge => {
-                let n1 = edge.sourceNode;
-                let n2 = edge.targetNode;
-                if (!n1 || !n2)
+                let n1 = edge.srcNode;
+                let n2 = edge.dstNode;
+                if (!n1 || !n2) {
+                    console.log("edge not initialized correctly");
                     return;
+                }
+                /*
                 n1 = n1.defaultCfg.model; // should find 'correct' way to do this...
                 n2 = n2.defaultCfg.model;
+                if (!n1 || !n2)
+                    return;
+                */              
                 inst.chooseActions(edge, n1, n2);
                 inst.chooseActions(edge, n2, n1);
             });
@@ -149,7 +165,7 @@
                     }
                 }
             }
-            edge.style = { stroke, lineWidth };
+            //edge.style = { stroke, lineWidth };
         }
 
         setEdgeAppearance(edge) {
@@ -215,8 +231,9 @@
         static test() {
             console.log("static test 1 called");
 
-            var grid4x5 = Sim.genGridGraph(4, 5);
-            console.log("grid4x5", grid4x5);
+            var grid4x5 = Sim.genGridGraph(4, 5, 180);
+            var grid = Sim.genGridGraph(6, 8, 120);
+            console.log("grid", grid);
             console.log("------------------------");
             let ranGeo25 = Sim.genRandomGeoGraph(25, 100);
             console.log("ranGeo25", ranGeo25)
@@ -224,8 +241,9 @@
 
             let model = { components: ["happiness"], actions: ["smile"]};
             let params = Sim.getDefaultParams();
-            let data = {data: grid4x5, layout: 'force'}
+            let data = {data: grid, layout: 'force'}
             let sim = new Sim(data, model, params);
+            Sim.sim = sim; // for debugging, can get this in dev console
             console.log("sim", sim);
             console.log("------------------------");
             sim.reset(params);
@@ -242,11 +260,12 @@
             sim.updateState();
             console.log("sim", sim);
             console.log("------------------------");
-            for (var i=0; i<10; i++) {
+            for (var i=0; i<50; i++) {
                 sim.updateState()
                 var hv = sim.getStateValues("happiness");
-                console.log("happiness", hv);
+                console.log(sim.gen, "happiness", hv);
             }
+            return "finished";
         }
 
         static getDefaultParams() {
@@ -255,14 +274,16 @@
                 emotionalBaseline: 0.0,
                 arousalBaseline: 0.5,
                 emotionalVolatility: 0.0,
-                susceptability: 0.01
+                susceptability: 0.1
               };
         }
         // Gerate a set of nodes corresponding to points
         // on a grid.   Nodes within a threshold distance
         // will be assigned as neighbors
-        static genGridGraph(nrows, ncols) {
+        static genGridGraph(nrows, ncols, dthresh) {
             let findNeighbors = Sim.findNeighbors;
+            if (dthresh == null)
+                dthresh = 120;
             var nodes = [];
             var edges = [];
             var width = 800;
@@ -283,7 +304,7 @@
                 }
             }
             nodes.forEach(node => {
-                let neighbors = findNeighbors(node, 120, nodes);
+                let neighbors = findNeighbors(node, dthresh, nodes);
                 neighbors.forEach(node2 => {
                     edges.push({ source: node.id, target: node2.id });
                 });
@@ -310,6 +331,10 @@
             return { nodes, edges };
         }
 
+        // return uniformly distributed number in range [a,b]
+        // note that this relies on Math.random which is not seedable
+        // for having reproducible monte carlo tests, it would be nice
+        // to use a RNG that allows seeds to be provided.
         static uniform(a, b) {
             return a + Math.random() * (b - a);
         }

@@ -1,0 +1,24 @@
+<html>
+<head>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<script src="./js/SimV0_1.js"></script>
+<script>
+    var sim = null;
+    $(document).ready(e => {
+        $("#logDiv").html("started");
+        //sim = new Sim();
+        Sim.test();
+        $("#rerun").click( e => Sim.test() );
+    })
+</script>
+<head>
+<body>
+<h3>Test Sim</h3>
+This page runs the static test method in the Sim class.
+In the console window, the class is visible as <b>Sim</b>, and
+the instance used for the tests is available as <b>Sim.sim</b>
+<p>
+<button id="rerun">Rerun</button>
+<div id="logDiv"></div>
+</body>
+</html>
